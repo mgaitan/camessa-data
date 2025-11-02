@@ -1,0 +1,7 @@
+[project]
+name = "camessa-data"
+version = "0.1.0"
+dependencies = [
+    "datasette",
+    "datasette-dashboards"
+]
