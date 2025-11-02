@@ -1,8 +1,9 @@
+# app.py
 from datasette.app import Datasette
-import asyncio
+from asgiref.wsgi import AsgiToWsgi
 
-# Initialize Datasette with your DB and metadata
+# Inicializá Datasette con tu DB y metadata
 ds = Datasette(["oferta_grupos.sqlite"], metadata="metadata.yaml")
 
-# Expose WSGI application
-application = asyncio.get_event_loop().run_until_complete(ds.app())
+# ds.app() devuelve una app ASGI -> adaptamos a WSGI para PythonAnywhere
+application = AsgiToWsgi(ds.app())
