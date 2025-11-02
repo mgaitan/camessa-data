@@ -1,0 +1,73 @@
+plugins:
+  datasette-dashboards:
+    my-dashboard:
+      title: Análisis de generación de energía
+      description: Showing some nice metrics
+      layout:
+        - [mapa, generacion_provincia]
+      filters:
+        provincia:
+          name: Provincia
+          type: select
+          db: oferta_grupos
+          query: SELECT distinct(PROVINCIA) FROM Oferta_Grupos
+        año:
+          name: Año
+          type: select
+          db: oferta_grupos
+          query: SELECT distinct(AÑO) FROM Oferta_Grupos
+      charts:
+        # total-count:
+        #   title: Total de entradas
+        #   db: oferta_grupos
+        #   query: SELECT count(*) as count FROM Oferta_Grupos
+        #   library: metric
+        #   display:
+        #     field: count
+        #     prefix:
+        #     suffix:
+
+        generacion_provincia:
+          title: Generación por grupo económico y tecnología
+          db: oferta_grupos
+          query: |
+            SELECT
+                [GRUPO ECONÓMICO] as grupo_economico,
+                TECNOLOGIA as tecnologia,
+                SUM([GENERACION NETA]) as generacion_neta_total
+            FROM Oferta_Grupos
+            WHERE [AÑO] = :año
+                AND [PROVINCIA] = :provincia
+                AND [GENERACION NETA] IS NOT NULL
+                AND [GRUPO ECONÓMICO] IS NOT NULL
+                AND TECNOLOGIA IS NOT NULL
+            GROUP BY [GRUPO ECONÓMICO], TECNOLOGIA
+            ORDER BY [GRUPO ECONÓMICO], generacion_neta_total DESC;
+          library: vega-lite
+          display:
+            mark: { type: bar, tooltip: true }
+            encoding:
+              "x": {"aggregate": "sum", "field": "generacion_neta_total"}
+              "y": {"field": "grupo_economico"}
+              "color": {"field": "tecnologia"}
+
+        mapa:
+          title: Geolocalizacion
+          db: oferta_grupos
+          query: |
+            SELECT DISTINCT
+                geolocalizacion.x as longitude,
+                geolocalizacion.y as latitude,
+                geolocalizacion.CENTRAL,
+                oferta_grupos.PROVINCIA,
+                oferta_grupos."GRUPO ECONÓMICO"
+            FROM
+                geolocalizacion
+            JOIN
+                oferta_grupos
+                ON oferta_grupos.CENTRAL = geolocalizacion.CENTRAL
+            WHERE
+                geolocalizacion.CENTRAL IS NOT NULL AND
+                oferta_grupos.PROVINCIA = :provincia
+          library: map
+          display:
